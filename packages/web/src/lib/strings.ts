@@ -3630,6 +3630,13 @@ Benchmark：
      * (approval waits, harness overhead), so this reads as two measurements, never as a split.
      */
     statElapsedSplit: (apiMs: string, toolMs: string): string => `API ${apiMs}，工具 ${toolMs}`,
+    /** The same two components as rows, behind the "?" beside an elapsed total. */
+    statApiTime: "模型 API 时间",
+    statToolTime: "工具 wall time",
+    /** The three priced parts behind the "?" beside a cost total; they sum to that total. */
+    costPartCacheRead: "缓存输入",
+    costPartCacheWrite: "未缓存输入",
+    costPartOutput: "输出",
     statInput: "输入 tokens",
     statCached: "已缓存",
     statOutput: "输出 tokens",
