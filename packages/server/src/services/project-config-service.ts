@@ -294,13 +294,23 @@ function showRef(provider: string, modelId: string): string {
   return `(provider=${provider}, model_id=${modelId})`;
 }
 
-/** `400 penguin_go_protocol_fixed`: `what` is the refused write, said as a sentence's start. */
-function protocolFixed(provider: string, what: string): HttpError {
+/**
+ * `400 penguin_go_protocol_fixed`: `what` is the refused write, said as a sentence's start. A
+ * refused row names itself in `details`, as `model_not_addable` does, so a caller that can drop
+ * one entry (a machine's config sync) skips it rather than the whole table.
+ */
+function protocolFixed(
+  provider: string,
+  what: string,
+  entry?: { provider: string; modelId: string },
+): HttpError {
   const group = providerInfo(provider)?.label ?? provider;
   return new HttpError(
     400,
     "penguin_go_protocol_fixed",
     `${what}: the ${group} group's protocol is fixed to ${fixedClientType(provider)}.`,
+    undefined,
+    entry,
   );
 }
 
@@ -1665,10 +1675,10 @@ export class ProjectConfigService implements ProjectConfigStore {
    * route — judged on the protocol it would actually run on, its own or its group's — is
    * rejected as well (`model_not_routable`), and so is one it adds to a built-in group that
    * takes no hand-added models when it is not one of that group's presets
-   * (`model_not_addable`); one already stored under that key is written as it stands. See
-   * the loops below for why the two differ. A Penguin Go row or group given a protocol other
-   * than MMSP, or the group's cleared, is `penguin_go_protocol_fixed` unless that value is the
-   * one it already stores.
+   * (`model_not_addable`); one already stored under that key is written as it stands. Both
+   * name the entry in `details` (`provider`, `modelId`). See the loops below for why the two
+   * differ. A Penguin Go row or group given a protocol other than MMSP, or the group's cleared,
+   * is `penguin_go_protocol_fixed` unless that value is the one it already stores.
    *
    * `providers` changes the groups' connections, merged per group and per field like
    * `PUT /models/providers/:provider`; a group absent there keeps its table. Once the rows are
@@ -1716,6 +1726,7 @@ export class ProjectConfigService implements ProjectConfigStore {
       throw protocolFixed(
         entry.provider,
         `Model ${showRef(entry.provider, entry.modelId)} cannot use client type ${JSON.stringify(entry.clientType)}`,
+        { provider: entry.provider, modelId: entry.modelId },
       );
     }
 
@@ -1758,10 +1769,14 @@ export class ProjectConfigService implements ProjectConfigStore {
       ).clientType;
       if (!unroutableVendorModel(entry.provider, entry.modelId, effectiveClientType)) continue;
       if (prevModels.some((m) => entryMatches(m, entry.provider, entry.modelId))) continue;
+      // `details` names the entry, so a caller that sends whole tables (a machine's config
+      // sync) can drop that one row and send the rest.
       throw new HttpError(
         400,
         "model_not_routable",
         `Model ${showRef(entry.provider, entry.modelId)} cannot be routed: a vendor group routes a model by the vendor prefix its id begins with (gpt-, claude-, gemini-, glm-, kimi-, deepseek-, minimax-). Add it under a custom group, where its protocol can be picked or detected.`,
+        undefined,
+        { provider: entry.provider, modelId: entry.modelId },
       );
     }
 
@@ -1788,6 +1803,8 @@ export class ProjectConfigService implements ProjectConfigStore {
         400,
         "model_not_addable",
         `Model ${showRef(entry.provider, entry.modelId)} cannot be added: the ${group} group carries its built-in models only. Add it under a custom group.`,
+        undefined,
+        { provider: entry.provider, modelId: entry.modelId },
       );
     }
 

@@ -50,93 +50,123 @@ export const en: Strings = {
     pageTitle: "Machines",
     imageVersion: (version: string) => `This server: ${version}`,
     noImage:
-      "This server has no install image to push. A packaged or tarball install carries one; a source checkout gets one from its first hot push.",
-    empty: "No host in ~/.ssh/config left to add.",
-    search: "Search hosts…",
-    noMatch: "No host matches.",
+      "This server has no install image to push. A packaged or tarball install carries one, and a source checkout builds one for each install; this server is neither.",
+    checkoutImageFailed:
+      "This server runs from a source checkout and could not build the install image it puts on machines. The build said:",
     localTitle: "this server",
     noneInUse: "No machine in use yet.",
     sshHint:
-      "A machine can be added when this server's account can ssh into it by key (`ssh <alias>` works in a terminal here). Whoever set up ssh can put it in ~/.ssh/config.",
-    allHosts: (count: number) => `${count} more in ~/.ssh/config`,
-    expand: "Expand",
-    fewer: "Collapse",
+      "A machine can be added when this server's account can ssh into it: by key (`ssh <name>` works in a terminal here), or with a password saved here. Add machine picks one from the ssh config, or fills in a new one.",
     host: {
-      addTitle: "New ssh host",
-      newVerb: "New",
       configureVerb: "Configure",
-      add: "Write to ssh config",
-      alias: "Alias (Host)",
-      aliasHint: "One word; `ssh <alias>` and this page will call the machine by it.",
-      hostName: "Address (HostName)",
+      name: "Name",
+      nameHint: "One word. This page and `ssh <name>` both call the machine by it.",
+      namePlaceholder: "A name for this machine",
+      hostName: "Host",
       hostNameHint: "An IP or a domain name.",
-      user: "User",
-      userHint: "Empty means this server account's own user name.",
+      hostNamePlaceholder: "The address of the machine to connect to",
+      user: "User name",
+      userPlaceholder: "Default: this server account's user name",
       port: "Port",
-      portHint: "Empty means 22.",
-      identityFile: "Key file (IdentityFile)",
-      identityFileHint: "Empty means ssh's default key.",
+      portPlaceholder: "Default: 22",
+      identityFile: "Private key file",
+      identityFileHint: "A key with a passphrase has to be in ssh-agent first.",
+      identityFilePlaceholder: "Default: ssh's default keys (~/.ssh/id_ed25519, …)",
+      signIn: "Sign in with",
+      signInKey: "Key",
+      signInPassword: "Password",
+      password: "Password",
+      passwordPlaceholder: "This user's password on that machine",
+      passwordSavedPlaceholder: "Saved; leave empty to keep it",
+      passwordDropped: "Saving deletes the saved password.",
+      passwordOneLine: "A password is one line of at most 1024 characters.",
+      passwordUnsupported: (ssh: string) =>
+        `This server's ssh cannot use a saved password: it needs OpenSSH 8.4 or later, and this one is ${ssh === "" ? "of an unknown version" : ssh}.`,
       oneWord: "Must be one word: no space, no #.",
       portRange: "A whole number from 1 to 65535.",
-      exists: "The ssh config already has this alias.",
-      added: (alias: string) => `Wrote ${alias}. Enable it from Add machines….`,
-      configure: "Configure ssh host",
+      exists: "The ssh config already has this name.",
       editTitle: "Configure ssh host",
-      saved: (alias: string) => `Updated ${alias} in the ssh config.`,
+      saved: (alias: string) => `Saved ${alias}'s SSH settings.`,
       foreign:
-        "This block was not written by PenguinHarness and may carry options this form does not know; edit it in ~/.ssh/config.",
+        "This block was not written by PenguinHarness and may carry options this form does not know: edit the host in ~/.ssh/config. How it signs in can still be changed here.",
     },
-    add: "Add machines…",
-    addSelected: (count: number) => `Enable these ${count}`,
-    use: "Enable",
-    stopUsing: "Disable",
+    addDialog: {
+      title: "Add machine",
+      intro:
+        "This server installs PenguinHarness on a machine it can reach over ssh, and connects to it.",
+      tabs: { config: "From the ssh config", manual: "Fill in by hand" },
+      search: "Search hosts",
+      noHosts:
+        "This server's ssh config has no host that is not added yet. Fill in a new one by hand instead.",
+      noMatch: (query: string) => `No host matches “${query}”.`,
+      elsewhere: (version: string) => `Another Project installed v${version}`,
+      installNow: "Install and connect right after adding",
+      submit: "Add",
+      submitCount: (count: number) => `Add ${count}`,
+      added: (count: number) => (count === 1 ? "Added 1 machine." : `Added ${count} machines.`),
+      addedInstalling: (count: number) =>
+        count === 1 ? "Added 1 machine; installing." : `Added ${count} machines; installing.`,
+    },
+    add: "Add machine",
     updateAll: (count: number) => `Update all (${count})`,
     updateAllConfirm: (count: number) =>
       `Update ${count === 1 ? "this machine" : `these ${count} machines`} to this server's version? Each one reinstalls the program, restarts its server and reconnects, so anyone using it is briefly cut off.`,
-    /** Asked before letting a machine go: the connection drops, the install stays. */
-    stopUsingOne: (alias: string) =>
-      `Disable ${alias}? This Project disconnects from it and stops listing it; whatever is running through it is cut off. The program stays on that machine, so you can enable it again later.`,
     state: {
       serving: "Running",
       queued: "Queued",
       working: "Working",
       ready: "Connected",
+      reconnecting: "Reconnecting",
       failed: "Failed",
       installedOnly: "Installed",
       behind: "Update available",
       notConnected: "Not connected",
       unreachable: "Unreachable",
-      stopped: "Not running",
-      linkedStopped: "Connected, not running",
+      stopped: "Stopped",
+      notInstalled: "Not installed",
       unknown: "Not checked",
+      signInRefused: "Sign-in refused",
     },
     phase: {
+      build: "Building the install image…",
       check: "Checking the machine…",
       install: "Installing the program…",
-      handover: "Handing over the build…",
+      handover: "Sending the build…",
       restart: "Restarting its server…",
       connect: "Connecting…",
-      sync: "Handing over the Model config…",
+      sync: "Syncing the config…",
+      stop: "Stopping its server…",
+      remove: "Removing the program…",
     },
     step: {
+      build: "Build the install image",
       check: "Check the machine",
       install: "Install the program",
       handover: "Send the build",
       restart: "Restart its server",
       connect: "Connect",
-      sync: "Sync the Model config",
+      sync: "Sync the config",
+      stop: "Stop its server",
+      remove: "Remove the program",
     },
     stepOf: (step: number, total: number) => `step ${step} of ${total}`,
     queued: "Waiting its turn behind the machines before it.",
     working: "Working…",
     failedAt: (step: string) => `Failed at "${step}".`,
     replaceProgram: "Force install",
-    replaceProgramWhy: "Reinstalls the program even if the version already matches",
     replaceProgramConfirm: (alias: string) =>
       `Force install on ${alias}? Whatever is on that machine now, this server's build is installed and its server restarted; anyone using it will be interrupted.`,
     refusedSelf: (alias: string) => `${alias} is the machine this server runs on; nothing to add.`,
     refusedUnknown: (alias: string) => `${alias} is not in this server's ssh config.`,
-    agentsUnreachable: "That machine is not connected — use it from the Machines page",
+    composer: {
+      reconnecting: "That machine is reconnecting…",
+      stopped: "That machine's server is stopped — start it from the Machines page",
+      notConnected: "That machine is not connected — enable it from the Machines page",
+      missing: "That machine is not on this Project's machine list",
+      signInRefused:
+        "That machine refused this server's sign-in — change its SSH settings on the Machines page",
+      failed: (message: string) => `That machine did not answer: ${message}`,
+    },
     adminOnly: "Only an admin can manage machines.",
     updateNotice: (count: number) =>
       count === 1 ? "1 machine to update" : `${count} machines to update`,
@@ -144,7 +174,20 @@ export const en: Strings = {
       local: "local",
       ssh: "ssh",
       updateNeeded: "Update needed",
-      update: "Update",
+      use: "Use",
+      settings: "Settings",
+      syncConfig: "Sync config",
+      delete: "Delete",
+      localUndeletable: "This server cannot be deleted",
+      why: {
+        reconnecting: "Reconnecting…",
+        reconnectingFor: (span: string) => `Reconnecting… · for ${span}`,
+        stopped: "Server stopped",
+        notConnected: "Not connected",
+        notInstalled: "Not installed yet",
+        failed: "The last job failed",
+        windows: "Windows machines cannot be connected yet",
+      },
     },
     detail: {
       describeRemote: (alias: string) => `A remote machine, reached over ssh as ${alias}.`,
@@ -152,7 +195,6 @@ export const en: Strings = {
       newerAvailable: (version: string) => `${version} is available`,
       facts: "Details",
       progress: "Progress",
-      actions: "Actions",
       fact: {
         connection: "Connection",
         viaSsh: (alias: string) => `ssh · ${alias}`,
@@ -162,7 +204,7 @@ export const en: Strings = {
         service: "Remote server",
         serviceLocal: "Server",
         running: (port: number) => `Running on port ${port}`,
-        stopped: "Not running",
+        stopped: "Stopped",
         unreachable: "Unreachable",
         checked: "Last checked",
         installed: "Installed",
@@ -178,46 +220,130 @@ export const en: Strings = {
       failedAtStep: (step: string, message: string) => `Failed at "${step}": ${message}`,
       showLog: "Show log",
       logLabel: "Job log",
-      primary: {
+      copyLog: "Copy log",
+      retry: "Retry",
+      checking: "Checking this machine…",
+      toolbar: {
+        label: "Machine actions",
+        enable: "Enable",
         update: "Update",
-        updateWhy: (version: string) =>
-          `Updates to ${version}, restarting its server and reconnecting.`,
+        stop: "Stop server",
         start: "Start server",
-        startWhy: "Starts the server on that machine and connects.",
-        connect: "Connect",
-        connectWhy: "Connects to the server on that machine, starting it first if needed.",
-        tryAgain: "Try again",
-        tryAgainWhy: "Tries ssh again; make sure the machine is on and reachable first.",
-        retry: "Retry",
-        retryWhy: "Runs the whole job again from the start",
+        restart: "Restart server",
+        syncConfig: "Sync config",
+        configure: "Configure SSH",
+        uninstall: "Uninstall",
       },
-      maintenance: "Maintenance",
-      leave: "Stop using",
-      configureSsh: "Configure ssh",
-      configureSshWhy: "Changes the address, user, port and key used to reach the machine",
-      hold: {
-        moving: "The machine is busy with a job; available when it finishes",
-        noImage: "This server has no version to install",
-        noConnection: "Not connected, so there is nothing to disconnect",
-        unreachable: "The machine could not be reached at the last check",
+      configSync: {
+        synced: (ago: string) => `Config synced · ${ago}`,
+        failed: (detail: string) => `Config sync failed: ${detail}`,
+        envOnly:
+          "Model keys from environment variables can't be synced to this machine. Set the keys by hand first.",
+        skippedTitle: "These models were not synced to this machine:",
+        skippedModel: (model: string, reason: string) => `${model}: ${reason}`,
+      },
+      held: {
+        moving: "Another action is running on this machine.",
+        unreachable: "Can't reach this machine right now.",
+        stopped: "Its server is stopped.",
+        noImage: "This server has no version to install.",
+      },
+      reconnect: {
+        title: "Reconnecting",
+        trying: "Reconnecting…",
+        lasting: (span: string) => `for ${span}`,
+        attempt: (n: number) => `attempt ${n}`,
+        next: (span: string) => `next try in ${span}`,
+        now: "trying now",
+        lastError: "Last failure:",
+        checked: "What the automatic check found:",
+        stopped: "Stopped retrying",
       },
     },
-    verbs: {
-      install: "Install program",
-      installWhy: "Installs this server's version on the machine",
-      connect: "Reconnect",
-      connectWhy: "Connects to the machine again, starting its server if needed",
-      restart: "Restart server",
-      restartWhy: "Restarts the server on the machine",
-      stopUsingWhy: "Disconnects and removes it from this Project; the program stays installed",
-      disconnect: "Disconnect",
-      disconnectWhy: "Drops the connection only; the server on the machine keeps running",
-      release: "Remove from Project",
-      releaseWhy: "This Project stops listing it; the connection and the program stay as they are",
-      disconnectConfirm: (alias: string) =>
-        `Disconnect from ${alias}? Every Project using it shares this connection, and whatever is running through it is cut off; the server over there keeps running, and you can connect again later.`,
-      releaseConfirm: (alias: string) =>
-        `Remove ${alias} from this Project? It is no longer listed here and no longer receives this Project's Model config; the program and the connection over there stay as they are, and you can enable it again from Add machines….`,
+    confirm: {
+      deleteTitle: (alias: string) => `Delete ${alias}?`,
+      deleteBody: (alias: string, passwordSaved = false) =>
+        `${alias} is removed from this Project and this server disconnects from it. The program and its data stay on that machine, and its host stays in the ssh config; Add machine can bring it back.` +
+        (passwordSaved
+          ? " The password this server saved for it is deleted, unless another Project still uses it."
+          : ""),
+      stopTitle: (alias: string) => `Stop the server on ${alias}?`,
+      stopBody:
+        "Anyone using it is cut off, and this server stops reconnecting to it; Start server brings it back. The program and its data stay.",
+      uninstallTitle: (alias: string) => `Uninstall PenguinHarness from ${alias}?`,
+      uninstallBody: (programDir: string) =>
+        `Its server is stopped first, then the program directory ${programDir} is removed. The machine stays on the list as not installed.`,
+      removeData: "Also delete the data directory on this machine",
+      removeDataWarning:
+        "The Sessions, Agents and config on that machine live there, and cannot be recovered once deleted.",
+    },
+    check: {
+      title: "Connection check",
+      skipped: (what: string) => `${what}: not checked.`,
+      name: {
+        ssh: "ssh sign-in",
+        platform: "System",
+        tools: "Installer tools",
+        download: "Release download",
+        disk: "Disk space",
+        port: "Port",
+      },
+      sshPass: (user: string, host: string) =>
+        user === "" ? "Signs in over ssh." : `Signs in as ${user} on ${host}.`,
+      ssh: {
+        "host-key-unknown": (alias: string) =>
+          `This server has never connected to ${alias}, and a background connection cannot accept a new host key. Run ssh ${alias} once in a terminal on this server and answer yes.`,
+        "host-key-changed": (alias: string) =>
+          `${alias}'s host key is not the one on record, so ssh refuses to connect. If the machine was reinstalled, remove the old key with ssh-keygen -R and connect once again.`,
+        auth: (alias: string) =>
+          `${alias} does not accept this server's key. Add this server's public key to ${alias}'s ~/.ssh/authorized_keys, load the key into ssh-agent, or sign in with a password in the machine's SSH settings.`,
+        "password-rejected": (alias: string) =>
+          `${alias} rejected the saved password. Enter it again in the machine's SSH settings.`,
+        "password-not-offered": (alias: string) =>
+          `${alias} does not take a password. Choose key sign-in in the machine's SSH settings.`,
+        "key-file": (alias: string) =>
+          `The private key file set for ${alias} cannot be used: it is missing, unreadable, or readable by others (it needs 600).`,
+        "host-not-found": (alias: string) =>
+          `This server cannot find ${alias}'s host name. Check its HostName in the ssh config.`,
+        refused: (alias: string) =>
+          `${alias} refused the connection: nothing accepts ssh at that address and port.`,
+        timeout: (alias: string) =>
+          `${alias} does not answer. Check its address and port, and that this server can reach it (a VPN, a firewall, a jump host).`,
+        closed: (alias: string) =>
+          `The connection to ${alias} was dropped before signing in, by the machine or by something between (a jump host, a firewall).`,
+        "ssh-config": (alias: string) =>
+          `This server's ssh config has an error, so ssh cannot reach ${alias} with it. Fix the line ssh names.`,
+        other: (alias: string) => `Could not sign in to ${alias} over ssh.`,
+      },
+      platform: (os: string, arch: string) => `System: ${os} ${arch}.`,
+      platformWindows: "Windows: it can be installed on, but not connected yet.",
+      platformUnsupported: "No release is published for this system or architecture.",
+      platformOldGlibc: (glibc: string, need: string) =>
+        `This machine has glibc ${glibc}; the Node that PenguinHarness ships needs ${need} or newer. Use a newer Linux system.`,
+      platformTerminals: (arch: string, glibc: string, need: string) =>
+        `System: Linux ${arch}, glibc ${glibc}. PenguinHarness runs, but terminals need glibc ${need} or newer and will not open on this machine.`,
+      platformMusl:
+        "This machine uses musl libc (Alpine, for example); the Node that PenguinHarness ships needs glibc. Use a glibc-based Linux system.",
+      toolsPass: "It has the tools the installer needs.",
+      toolsNoCurl:
+        "No curl there: the machine cannot download the release itself, so an install sends it from this server over ssh.",
+      toolsMissing: (tools: string) =>
+        `Missing tools the installer needs: ${tools}. Install them there, then try again.`,
+      downloadFrom: (version: string, source: "both" | "github" | "oss") =>
+        `Downloads release ${version} from ${source === "both" ? "GitHub and the mirror" : source === "github" ? "GitHub" : "the mirror"}.`,
+      downloadCarried: (version: string) =>
+        `The machine reaches neither GitHub nor the mirror, so it cannot download release ${version}; an install sends it from this server over ssh (about 95 MB).`,
+      downloadMissing: (version: string) =>
+        `Release ${version} has no package for this machine yet, on GitHub or the mirror.`,
+      diskPass: (free: string) => `${free} free.`,
+      diskTight: (free: string) =>
+        `${free} free: enough for one install, with little room to spare.`,
+      diskLow: (free: string, need: string) => `Only ${free} free; an install needs about ${need}.`,
+      portFree: (port: number) => `Port ${port} is free.`,
+      portOurs: (port: number) => `Its PenguinHarness server runs on port ${port}.`,
+      portTaken: (port: number) =>
+        `Port ${port} is taken by another program. This server starts PenguinHarness on that port, so free it first.`,
+      sshSaid: (words: string) => `ssh: ${words}`,
     },
   },
 
@@ -5702,6 +5828,14 @@ Scenarios:
   },
   errors: {
     networkError: "Network error, please check your connection",
+    notTheServer: {
+      page: (status: number) =>
+        `A web page came back (HTTP ${status}) instead of the server's answer — the dev server or reverse proxy in front of it did not forward this request.`,
+      proxy: (status: number) =>
+        `A proxy answered (HTTP ${status}) and the request never reached the server. Local and LAN addresses should bypass the proxy.`,
+      other: (status: number, type: string) =>
+        `What came back is not the server's answer (HTTP ${status}${type === "" ? "" : `, ${type}`}).`,
+    },
     modelCredentialMissing: (modelId: string) =>
       `Model ${modelId} has no API key yet — configure it on the Models page first`,
     noDefaultModel: "This project has no default model yet — add one on the Models page first",
