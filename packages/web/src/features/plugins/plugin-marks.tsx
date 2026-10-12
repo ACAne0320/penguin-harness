@@ -86,16 +86,22 @@ export function statusHint(
     case "failed":
       return S.plugins.statusHint.failed(mod?.error ?? "");
     case "not-here":
-      return mod?.state === "elsewhere"
-        ? S.plugins.statusHint.elsewhere((mod.onlyOn ?? []).join(", "))
-        : S.plugins.statusHint.unsynced;
+      return S.plugins.statusHint.unsynced;
   }
 }
 
 /** One tag on a row's tag line: a category, "built in", where it runs. */
-export function PluginTag({ children, title }: { children: ReactNode; title?: string }) {
+export function PluginTag({
+  children,
+  title,
+  id,
+}: {
+  children: ReactNode;
+  title?: string;
+  id?: string;
+}) {
   return (
-    <Badge variant="soft" tooltip={title}>
+    <Badge variant="soft" tooltip={title} {...(id !== undefined ? { id } : {})}>
       {children}
     </Badge>
   );

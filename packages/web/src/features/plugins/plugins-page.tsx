@@ -25,7 +25,7 @@
  *   the agent runs in progress in every Project, so the confirm says what the install does and,
  *   in small type below, what it costs.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type {
   AgentMcpServerItem,
@@ -73,6 +73,7 @@ import { draftKey, loadDraft, saveDraft } from "../chat/draft-cache";
 import { prepareNewChatDraft } from "../chat/new-chat";
 import { localizedText } from "../chat/skill-use";
 import { usePluginRepair } from "./plugin-repair";
+import { samePluginTarget, viewedMachine } from "./viewed-machine";
 import { SettingsDialog } from "../settings/settings-dialog";
 import { pickDefaultAgent } from "../ai-create";
 import { toneInk } from "../../lib/tone";
@@ -154,7 +155,6 @@ export function pluginUpdatePlan(
 }
 
 /** The picker's value for all machines: a machine id is never this short. */
-const ALL_MACHINES_CHOICE = "*";
 
 export function PluginsPage() {
   useDocumentTitle(S.nav.plugins);
@@ -176,7 +176,29 @@ export function PluginsPage() {
   const [error, setError] = useState<string | null>(null);
   const [installed, setInstalled] = useState<InstalledMap>(new Map());
   /** What this Project asks for of the module plugins, and which of those the process runs. */
-  const [deployment, setDeployment] = useState<InstalledPluginsResponse | null>(null);
+  const [deploymentRead, setDeploymentRead] = useState<{
+    projectId: string;
+    generation: number;
+    res: InstalledPluginsResponse;
+  } | null>(null);
+  // A return to the same Project is a new visit, not permission for an old reply.
+  const projectVisit = useRef({ projectId, generation: 0 });
+  if (projectVisit.current.projectId !== projectId) {
+    projectVisit.current = { projectId, generation: projectVisit.current.generation + 1 };
+  }
+  const visit = projectVisit.current;
+  const deployment =
+    deploymentRead?.projectId === projectId && deploymentRead.generation === visit.generation
+      ? deploymentRead.res
+      : null;
+  const isCurrentVisit = () => projectVisit.current === visit;
+  const deploymentRequest = useRef(0);
+  const setDeployment = (res: InstalledPluginsResponse) => {
+    if (projectId !== null && isCurrentVisit()) {
+      deploymentRequest.current += 1;
+      setDeploymentRead({ projectId, generation: visit.generation, res });
+    }
+  };
   /** The registry: every module plugin this deployment could ask for. */
   const [index, setIndex] = useState<PluginIndexEntry[] | null>(null);
   /**
@@ -217,57 +239,83 @@ export function PluginsPage() {
   // The Project's list, re-read whenever the Project changes; a read that fails leaves the
   // module rows without their state rather than failing the page.
   const reloadDeployment = useCallback(() => {
+    const request = ++deploymentRequest.current;
     if (projectId === null) return;
-    api.getInstalledPlugins(projectId).then(setDeployment, () => setDeployment(null));
-  }, [projectId]);
+    api.getInstalledPlugins(projectId).then(
+      (res) => {
+        if (request === deploymentRequest.current && isCurrentVisit()) {
+          setDeploymentRead({ projectId, generation: visit.generation, res });
+        }
+      },
+      () => {
+        if (request === deploymentRequest.current && isCurrentVisit()) {
+          setDeploymentRead(null);
+        }
+      },
+    );
+  }, [projectId, visit]);
   useEffect(reloadDeployment, [reloadDeployment]);
 
   const { machineIds, machineLabels } = useSessions();
-  /** The machine the page shows and edits: null for all machines, or a machine's own id. */
-  const [viewMachine, setViewMachine] = useState<string | null>(null);
-  useEffect(() => setViewMachine(null), [projectId]);
+  /** The machine picked in the header; null until one is, which views this server. */
+  const [pickedMachine, setPickedMachine] = useState<string | null>(null);
+  useEffect(() => {
+    setPickedMachine(null);
+    setPendingSpecifier(null);
+    setPendingApply(null);
+  }, [visit]);
   const selfId = deployment?.machineId;
+  const nameOf = (machineId: string) =>
+    machineId === selfId ? S.plugins.thisServer : (machineLabels.get(machineId) ?? machineId);
+  // The picker offers this server, then the machines this Project reaches and any a table
+  // names; a deployment with neither has one machine, and no picker.
+  const otherMachines = [
+    ...new Set([...machineIds, ...(deployment?.plugins ?? []).flatMap((p) => p.machines ?? [])]),
+  ].filter((id) => id !== selfId);
+  const machineChoices: MachineChoice[] = (
+    selfId === undefined ? [] : [selfId, ...otherMachines]
+  ).map((id) => ({ value: id, label: nameOf(id) }));
+  /** The machine the page shows and edits — undefined only until this server's id is read. */
+  const viewMachine = viewedMachine(
+    pickedMachine,
+    machineChoices.map((c) => c.value),
+    selfId,
+  );
   /** What the viewed machine answered itself — or why it could not — when it is not this server. */
   const [remote, setRemote] = useState<
-    | { machineId: string; res: InstalledPluginsResponse }
-    | { machineId: string; error: string }
+    | { projectId: string; machineId: string; res: InstalledPluginsResponse }
+    | { projectId: string; machineId: string; error: string }
     | null
   >(null);
   // Read again after every change of the list: the machine is handed its part in the
   // background, so a row reads "not on that machine yet" until it has answered with it.
   useEffect(() => {
     setRemote(null);
-    if (projectId === null || viewMachine === null || viewMachine === selfId) return;
+    if (projectId === null || viewMachine === undefined || viewMachine === selfId) return;
     let cancelled = false;
     api.getInstalledPlugins(projectId, viewMachine).then(
-      (res) => !cancelled && setRemote({ machineId: viewMachine, res }),
-      (e: unknown) => !cancelled && setRemote({ machineId: viewMachine, error: apiErrorText(e) }),
+      (res) => !cancelled && setRemote({ projectId, machineId: viewMachine, res }),
+      (e: unknown) =>
+        !cancelled && setRemote({ projectId, machineId: viewMachine, error: apiErrorText(e) }),
     );
     return () => {
       cancelled = true;
     };
   }, [projectId, viewMachine, selfId, deployment]);
-  const nameOf = (machineId: string) =>
-    machineId === selfId ? S.plugins.thisServer : (machineLabels.get(machineId) ?? machineId);
-  const view: PluginView = {
-    machineId: viewMachine,
-    remote: remote !== null && "res" in remote ? remote.res : null,
-    nameOf,
-  };
-  /** Whether the machine in view is this server itself, or every machine including it. */
-  const viewIncludesHere = viewMachine === null || viewMachine === selfId;
-  // The picker offers the machines this Project reaches and any a table names; a deployment
-  // with neither has one machine, and no picker.
-  const otherMachines = [
-    ...new Set([...machineIds, ...(deployment?.plugins ?? []).flatMap((p) => p.machines ?? [])]),
-  ].filter((id) => id !== selfId);
-  const machineChoices: MachineChoice[] = [
-    { value: ALL_MACHINES_CHOICE, label: S.plugins.allMachines },
-    ...(selfId === undefined ? [] : [selfId, ...otherMachines]).map((id) => ({
-      value: id,
-      label: nameOf(id),
-    })),
-  ];
+  const view: PluginView | undefined =
+    viewMachine === undefined
+      ? undefined
+      : {
+          machineId: viewMachine,
+          remote:
+            remote !== null &&
+            "res" in remote &&
+            samePluginTarget(remote, { projectId, machineId: viewMachine })
+              ? remote.res
+              : null,
+        };
+  /** Whether the machine in view is this server itself. */
+  const viewingHere = viewMachine === selfId;
 
   // The registry, fetched on page entry and again after an import or a delete.
   useEffect(() => {
@@ -296,6 +344,8 @@ export function PluginsPage() {
     specifier: string;
     name: string;
     install: boolean;
+    projectId: string;
+    machineId: string;
   } | null>(null);
 
   /**
@@ -306,13 +356,22 @@ export function PluginsPage() {
    * running process has — including a load that failed, which is reported as such rather than
    * toasted as installed; otherwise the row waits for a restart.
    */
-  const runDeploymentInstall = async (specifier: string, install: boolean) => {
-    if (pendingSpecifier !== null || projectId === null) return;
+  const runDeploymentInstall = async (target: NonNullable<typeof pendingApply>) => {
+    // A confirmation names the target that opened it, never a later picker or Project.
+    if (pendingSpecifier !== null) return;
+    if (!samePluginTarget(target, { projectId, machineId: viewMachine })) {
+      setPendingApply(null);
+      return;
+    }
+    const { specifier, install } = target;
+    const request = deploymentRequest.current;
     setPendingSpecifier(specifier);
     try {
       const next = install
-        ? await api.installPlugin(projectId, specifier, viewMachine)
-        : await api.uninstallPlugin(projectId, specifier, viewMachine);
+        ? await api.installPlugin(target.projectId, specifier, target.machineId)
+        : await api.uninstallPlugin(target.projectId, specifier, target.machineId);
+      // A later read owns the snapshot; an old write cannot invalidate it.
+      if (!isCurrentVisit() || request !== deploymentRequest.current) return;
       setDeployment(next);
       const row = next.plugins.find((p) => p.specifier === specifier);
       if (install && row?.error !== undefined) {
@@ -321,10 +380,12 @@ export function PluginsPage() {
         toastSuccess(install ? S.plugins.deploymentInstalledToast(specifier) : S.common.saved);
       }
     } catch (e) {
-      toastError(apiErrorText(e));
+      if (isCurrentVisit()) toastError(apiErrorText(e));
     } finally {
-      setPendingSpecifier(null);
-      setPendingApply(null);
+      if (isCurrentVisit()) {
+        setPendingSpecifier(null);
+        setPendingApply(null);
+      }
     }
   };
 
@@ -350,22 +411,6 @@ export function PluginsPage() {
   const reloadServerPlugins = () => {
     setReloadKey((k) => k + 1);
     reloadDeployment();
-  };
-
-  /**
-   * Deletes a package an admin installed on the server: off this Project's list, and off the
-   * server's disk once nothing lists it — through the same route Remove takes. The copies of its
-   * skills and hooks on Agents stay where they are.
-   */
-  const deletePlugin = async (plugin: PluginItem) => {
-    if (projectId === null) return;
-    try {
-      setDeployment(await api.uninstallPlugin(projectId, plugin.package));
-      toastSuccess(S.plugins.deletedToast(plugin.package));
-      reloadServerPlugins();
-    } catch (e) {
-      toastError(apiErrorText(e));
-    }
   };
 
   // Installed skills, hook packages and MCP servers for every Agent in the current Project
@@ -684,16 +729,22 @@ export function PluginsPage() {
       busy={row.module !== undefined && pendingSpecifier === row.module.specifier}
       blocked={
         row.module !== undefined &&
-        pendingSpecifier !== null &&
-        pendingSpecifier !== row.module.specifier
+        (viewMachine === undefined ||
+          (pendingSpecifier !== null && pendingSpecifier !== row.module.specifier))
       }
       onQuickStart={quickStartLibrary}
-      onDeletePlugin={deletePlugin}
+      onDeletePlugin={null}
       onToggleInstall={toggleInstall}
       onUpdateOutdated={updateOutdated}
       onModuleApply={(install) => {
-        if (row.module !== undefined) {
-          setPendingApply({ specifier: row.module.specifier, name: row.name, install });
+        if (row.module !== undefined && projectId !== null && viewMachine !== undefined) {
+          setPendingApply({
+            specifier: row.module.specifier,
+            name: row.name,
+            install,
+            projectId,
+            machineId: viewMachine,
+          });
         }
       }}
       onRepair={
@@ -728,12 +779,12 @@ export function PluginsPage() {
             onGroupBy={chooseGroupBy}
             isAdmin={isAdmin}
             machinePicker={
-              otherMachines.length > 0 ? (
+              machineChoices.length > 1 && viewMachine !== undefined ? (
                 <MachinePicker
                   aria-label={S.plugins.viewMachine}
                   choices={machineChoices}
-                  value={viewMachine ?? ALL_MACHINES_CHOICE}
-                  onChange={(v) => setViewMachine(v === ALL_MACHINES_CHOICE ? null : v)}
+                  value={viewMachine}
+                  onChange={setPickedMachine}
                 />
               ) : null
             }
@@ -763,12 +814,14 @@ export function PluginsPage() {
             {S.pluginRegistry.sourceUnavailable(indexFailures.length)}
           </Notice>
         )}
-        {remote !== null && "error" in remote && remote.machineId === viewMachine && (
-          <Notice tone="attention" className="mt-4">
-            {S.plugins.machineUnreadable(nameOf(remote.machineId), remote.error)}
-          </Notice>
-        )}
-        {deployment !== null && viewIncludesHere && deployment.restartPending && (
+        {remote !== null &&
+          "error" in remote &&
+          samePluginTarget(remote, { projectId, machineId: viewMachine }) && (
+            <Notice tone="attention" className="mt-4">
+              {S.plugins.machineUnreadable(nameOf(remote.machineId), remote.error)}
+            </Notice>
+          )}
+        {deployment !== null && viewingHere && deployment.restartPending && (
           <Notice tone="attention" className="mt-4">
             {S.plugins.restartPending}
           </Notice>
@@ -838,25 +891,26 @@ export function PluginsPage() {
 
       {/* A server module change: what it does is said before it runs, and what it costs in
           small type under it. An install is primary; a removal is danger. */}
-      {pendingApply !== null && (
-        <ConfirmModal
-          open
-          title={
-            pendingApply.install
-              ? S.plugins.applyConfirmInstall(pendingApply.name)
-              : S.plugins.applyConfirmRemove(pendingApply.name)
-          }
-          tone={pendingApply.install ? "primary" : "danger"}
-          {...(pendingApply.install ? { glyph: ICONS.download } : {})}
-          confirmLabel={pendingApply.install ? S.plugins.install : S.plugins.uninstall}
-          cancelLabel={S.common.cancel}
-          busy={pendingSpecifier !== null}
-          onClose={() => setPendingApply(null)}
-          onConfirm={() => void runDeploymentInstall(pendingApply.specifier, pendingApply.install)}
-        >
-          <ModuleApplyBody install={pendingApply.install} name={pendingApply.name} />
-        </ConfirmModal>
-      )}
+      {pendingApply !== null &&
+        samePluginTarget(pendingApply, { projectId, machineId: viewMachine }) && (
+          <ConfirmModal
+            open
+            title={
+              pendingApply.install
+                ? S.plugins.applyConfirmInstall(pendingApply.name)
+                : S.plugins.applyConfirmRemove(pendingApply.name)
+            }
+            tone={pendingApply.install ? "primary" : "danger"}
+            {...(pendingApply.install ? { glyph: ICONS.download } : {})}
+            confirmLabel={pendingApply.install ? S.plugins.install : S.plugins.uninstall}
+            cancelLabel={S.common.cancel}
+            busy={pendingSpecifier !== null}
+            onClose={() => setPendingApply(null)}
+            onConfirm={() => void runDeploymentInstall(pendingApply)}
+          >
+            <ModuleApplyBody install={pendingApply.install} name={pendingApply.name} />
+          </ConfirmModal>
+        )}
       {repairModal}
       {/* A library plugin's quick start on an Agent that lacks it: installing comes first, and is asked. */}
       {pendingQuickStart !== null && currentAgent && (
@@ -978,7 +1032,7 @@ function CardGrid({ children }: { children: React.ReactNode }) {
  * list too): the search box, and beside it the grouping select, whose options each say what they
  * do ("Group by status") while its accessible name says what it groups; it is wide enough for its
  * longest English option. Then, for an admin, the machine picker (which machine's plugins the rows
- * show, and which table an install or a removal edits: the shared one, or that machine's own), then
+ * show, and which machine's own table an install or a removal edits), then
  * the pair the Agents page header has: Import plugin, the primary button, and Settings, the
  * secondary one, which opens the Settings dialog's Plugins page — each glyph before words that
  * always show. On a phone the search box and the select share the first line, the box taking what

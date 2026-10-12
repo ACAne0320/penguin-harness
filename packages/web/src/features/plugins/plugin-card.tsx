@@ -24,7 +24,7 @@
  * a zip another server imports, for any member whenever its package is on this server — and,
  * for an admin, Delete on a package an admin installed on the server.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { ReactNode } from "react";
 import type { AgentSummary, PluginItem, QuickStartItem } from "@prismshadow/penguin-server/api";
 import {
@@ -125,7 +125,7 @@ export interface PluginCardProps {
   blocked: boolean;
   onQuickStart: (plugin: PluginItem) => void;
   /** Deletes a package an admin installed on the server (the card has asked first). */
-  onDeletePlugin: (plugin: PluginItem) => Promise<void>;
+  onDeletePlugin: ((plugin: PluginItem) => Promise<void>) | null;
   onToggleInstall: (agentId: string, plugin: PluginItem, on: boolean) => Promise<boolean>;
   onUpdateOutdated: (name: string, agentIds: string[]) => Promise<void>;
   /** Asks to install (true) or remove (false) the server module; the page confirms first. */
@@ -138,6 +138,7 @@ export interface PluginCardProps {
 export function PluginCard(props: PluginCardProps) {
   const { row, status, usage, categoryTitle, agents, installed } = props;
   const { locale } = useLocale();
+  const sharedId = useId();
   const plugin = row.library;
   const [detailOpen, setDetailOpen] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
@@ -270,7 +271,7 @@ export function PluginCard(props: PluginCardProps) {
       // Not listed: Install. Listed: Remove — and, in the all-machines view of a module listed
       // for some machines only, Install too, which asks every machine to run it.
       const verbs: boolean[] = [
-        ...(mod.state === "none" || mod.state === "elsewhere" ? [true] : []),
+        ...(mod.state === "none" ? [true] : []),
         ...(mod.state !== "none" ? [false] : []),
       ];
       for (const install of verbs) {
@@ -288,6 +289,9 @@ export function PluginCard(props: PluginCardProps) {
             aria-busy={props.busy}
             title={install ? label : (mod.removeBlocked ?? label)}
             data-tooltip-extra={!install && mod.removeBlocked !== undefined}
+            aria-describedby={
+              !install && mod.shared === true ? `${sharedId}-tag ${sharedId}-hint` : undefined
+            }
             disabled={props.busy || props.blocked || (!install && mod.removeBlocked !== undefined)}
             onClick={() => props.onModuleApply(install)}
           >
@@ -303,7 +307,12 @@ export function PluginCard(props: PluginCardProps) {
     }
     // An admin's package of Skills or hooks leaves the server from its dialog; a server module's
     // Remove above does the same for one with modules.
-    if (where === "footer" && props.isAdmin && plugin?.source === "installed") {
+    if (
+      where === "footer" &&
+      props.isAdmin &&
+      plugin?.source === "installed" &&
+      props.onDeletePlugin !== null
+    ) {
       out.push(
         <Button
           key="delete"
@@ -358,9 +367,11 @@ export function PluginCard(props: PluginCardProps) {
       </PluginTag>,
     );
   }
-  if (row.module?.onlyOn !== undefined) {
+  if (row.module?.shared === true) {
     tags.push(
-      <PluginTag key="only-on">{S.plugins.onlyOn(row.module.onlyOn.join(", "))}</PluginTag>,
+      <PluginTag key="shared" id={`${sharedId}-tag`} title={S.plugins.sharedHint}>
+        {S.plugins.sharedTag}
+      </PluginTag>,
     );
   }
   return (
@@ -420,6 +431,11 @@ export function PluginCard(props: PluginCardProps) {
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">{tags}</div>
         )}
       </button>
+      {row.module?.shared === true && (
+        <span id={`${sharedId}-hint`} className="sr-only">
+          {S.plugins.sharedHint}
+        </span>
+      )}
       {cardActions.length > 0 && (
         <div className="flex shrink-0 items-center justify-center gap-1.5">{cardActions}</div>
       )}
@@ -532,7 +548,7 @@ export function PluginCard(props: PluginCardProps) {
           </div>
         </ConfirmModal>
       )}
-      {plugin !== undefined && pendingDelete && (
+      {plugin !== undefined && pendingDelete && props.onDeletePlugin !== null && (
         <ConfirmModal
           open
           title={S.plugins.deleteConfirmTitle(plugin.package)}
@@ -542,7 +558,7 @@ export function PluginCard(props: PluginCardProps) {
           onClose={() => setPendingDelete(false)}
           onConfirm={() => {
             setDeleting(true);
-            void props.onDeletePlugin(plugin).finally(() => {
+            void props.onDeletePlugin!(plugin).finally(() => {
               setDeleting(false);
               setPendingDelete(false);
               setDetailOpen(false);
