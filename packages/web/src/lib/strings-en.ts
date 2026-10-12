@@ -498,10 +498,21 @@ export const en: Strings = {
     unavailableDesktop: "The built-in browser runs in the PenguinHarness desktop app.",
     unavailableShell: "This desktop app is too old for the built-in browser. Update it to use it.",
     unavailableWindow: "No app window is available to show the browser.",
+    unavailablePairChrome: "To have agents use your Chrome instead, pair it in Settings › Browser.",
     useChrome: "Use System Chrome",
+    startPage: {
+      label: "Common sites",
+      sites: {
+        google: "Google",
+        bing: "Bing",
+        baidu: "Baidu",
+        github: "GitHub",
+        stackoverflow: "Stack Overflow",
+        wikipedia: "Wikipedia",
+      },
+    },
     openFailed: (reason: string): string => `Could not open a tab: ${reason}`,
     closeFailed: (reason: string): string => `Could not close the tab: ${reason}`,
-    backendGroup: "Browser",
     backendBuiltin: "Built-in",
     backendChrome: "System Chrome",
     chromeConnected: (name: string | null): string =>
