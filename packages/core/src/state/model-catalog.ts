@@ -272,16 +272,16 @@ export interface ModelCatalogEntry {
   baseUrl?: string;
   /**
    * The seller no longer offers this row, but Projects created while it did still carry it: a
-   * row a Project has is never deleted by "Sync presets", and several of these were the default
-   * model of new Projects. A retired row is not a preset — `presetModelEntries` and
-   * `presetPromotions` skip it, so a new Project never gets it or a promotion for it, and a sync
-   * never adds it — but it is still in `catalogModelEntries`, so a sync keeps updating the row
-   * on a Project that carries it, and lookups by `(provider, modelId)` still find it. Those
-   * Projects keep its display name and vision flag, and their usage on it is priced on its
-   * off-peak schedule whenever the row stores the catalog's price: the tier only applies to that
-   * price, and a sync puts back a price an older release stored. The schedule is the part that
-   * matters: cost is priced when it is read, so deleting a scheduled row would reprice every
-   * off-peak record already on those Projects at the peak rate.
+   * row a Project has is never deleted by "Add new models", and several of these were the
+   * default model of new Projects. A retired row is not a preset — `presetModelEntries` and
+   * `presetPromotions` skip it, so a new Project never gets it or a promotion for it, a sync
+   * never adds it, and "Restore defaults" deletes it with every other row that is not a preset —
+   * but it is still in `catalogModelEntries`, and lookups by `(provider, modelId)` still find
+   * it. Projects carrying it keep its display name and vision flag, and their usage on it is
+   * priced on its off-peak schedule whenever the row stores the catalog's price: the tier only
+   * applies to that price. The schedule is the part that matters: cost is priced when it is
+   * read, so deleting a scheduled row would reprice every off-peak record already on those
+   * Projects at the peak rate.
    *
    * Compatibility, not catalog data: remove a retired row only after its seller has stopped
    * accepting the id AND the release notes have told users that usage recorded on it will be
@@ -289,6 +289,16 @@ export interface ModelCatalogEntry {
    * id rejected makes that call.
    */
   retired?: true;
+  /**
+   * This row is, or once was, the default model of new Projects (defaultProjectConfig). Usage
+   * recorded on it stays priced after a Project stops storing the row — "Restore defaults"
+   * deletes every row that is not a preset, retired ones included, and a former default is
+   * often most of an older Project's history: retainedCatalogPricing gives the cost path this
+   * row's `pricing` for it. Moving the default sets this on the new row and leaves it on the
+   * old one, which also keeps the old row in the catalog (retired once it stops being a preset)
+   * for as long as anyone may have recorded usage on it.
+   */
+  wasDefault?: true;
 }
 
 /**
@@ -807,6 +817,7 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     pricing: cny(0.04, 2, 8),
     offPeakDiscount: DEEPSEEK_OFF_PEAK,
     supportsVision: true,
+    wasDefault: true,
   },
   {
     // Retired 2026-09-16 (see ModelCatalogEntry.retired): the default model of new Projects
@@ -821,6 +832,7 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     offPeakDiscount: DEEPSEEK_OFF_PEAK,
     supportsVision: false,
     retired: true,
+    wasDefault: true,
   },
   {
     // Retired 2026-09-16 (see ModelCatalogEntry.retired): the default model of new Projects in
@@ -833,6 +845,7 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     offPeakDiscount: DEEPSEEK_OFF_PEAK,
     supportsVision: true,
     retired: true,
+    wasDefault: true,
   },
   {
     // DeepSeek's pricing page names the model behind this id DeepSeek-V4-Pro-0813 (read
@@ -849,6 +862,7 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     pricing: cny(0.3, 9, 27),
     offPeakDiscount: DEEPSEEK_OFF_PEAK,
     supportsVision: false,
+    wasDefault: true,
   },
   // -- OpenRouter (gateway: OpenAI-compatible protocol, preset base URL). Prices re-read in
   // one pass on 2026-08-07 from the models API (/api/v1/models; the API is authoritative
@@ -4101,8 +4115,8 @@ function sharedValue(
  * Project, "Add new models" for a group new to the file, "Restore defaults": its gateway
  * endpoint (`gatewayBaseUrl`, else the one base URL every catalog row of the group carries)
  * and its one protocol (the group's pin, providerClientType, else the one pin every catalog
- * row of the group carries; canonical spelling). Retired rows count: "Restore defaults"
- * writes them too, so they must store their difference from the same table.
+ * row of the group carries; canonical spelling). Retired rows count: the Projects that still
+ * carry one store its difference from the same table.
  *
  * Undefined for `custom` (it holds the user's own endpoints), for an id the catalog does not
  * know, and for a group with neither — the first-party vendors, whose rows go to the
@@ -4176,10 +4190,8 @@ export function presetModelEntries(groups: ProviderTable = presetProviderTable()
 
 /**
  * Every catalog row as a ModelEntry, retired rows included, in the shape presetModelEntries
- * writes. This is the list "Restore defaults" puts a Project's built-in rows back to: a sync
- * never adds a retired row, but a restore resets one the Project already carries like any
- * preset, so a price an older release stored returns to the catalog's (see
- * ModelCatalogEntry.retired). `groups` as in presetModelEntries.
+ * writes: what a Project carrying a retired row stores for it beside a new Project's group
+ * tables (see ModelCatalogEntry.retired). `groups` as in presetModelEntries.
  */
 export function catalogModelEntries(groups: ProviderTable = presetProviderTable()): ModelEntry[] {
   const catalog = presetProviderTable();
@@ -4239,6 +4251,21 @@ export function presetPromotions(): Array<{ provider: string; modelId: string; d
       ? [{ provider: m.provider, modelId: m.modelId, discount: m.discount }]
       : [],
   );
+}
+
+/**
+ * The price usage on a model is costed at when the Project no longer stores the model's row:
+ * the catalog's list `pricing` of a row that is or was the default of new Projects
+ * (ModelCatalogEntry.wasDefault), and undefined for every other pair — a row the Project does
+ * store is priced from the file, never from here. No promotion applies: a Project's promotion
+ * goes with its row. An off-peak schedule still does, since this is the catalog's own peak price.
+ */
+export function retainedCatalogPricing(
+  provider: string,
+  modelId: string,
+): ModelPricing | undefined {
+  const entry = catalogEntryFor(provider, modelId);
+  return entry?.wasDefault === true ? entry.pricing : undefined;
 }
 
 /**
