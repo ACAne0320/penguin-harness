@@ -42,10 +42,15 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    // Each worker boots app trees and runs real TypeScript compilers. Keep their CPU and
-    // filesystem contention bounded on CI and when pnpm runs other packages alongside us.
+    // Two workers: each boots app trees and runs real TypeScript compilers, and `pnpm test` runs
+    // other packages alongside. A third on the four-vCPU runners nearly doubled every file's time
+    // on Windows for no shorter shard. `minWorkers` equals `maxWorkers` because with
+    // `isolate: false` a worker above the minimum is terminated while idle, and that termination
+    // can reject inside tinypool after every file has passed ("Terminating worker thread"),
+    // failing the run with no failing test. Three workers over a minimum of one did so on every
+    // run on a four-core machine; two over one was not seen to, but takes the same path.
     maxWorkers: 2,
-    minWorkers: 1,
+    minWorkers: 2,
     isolate: false,
     restoreMocks: true,
     testTimeout: process.platform === "win32" ? 30_000 : 5_000,
