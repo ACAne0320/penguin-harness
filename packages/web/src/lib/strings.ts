@@ -465,7 +465,12 @@ export const zh = {
   /** Server-side terminal (the in-app dock and the standalone /terminal page). */
   terminal: {
     title: "终端",
+    /** Starts another shell: the terminal panel's "+" and the standalone /terminal page's button. */
     newShell: "新建终端",
+    /** The terminal panel's name: its dock tab, its "+" menu row, picker row and launcher entry. */
+    shellEntry: "命令行终端",
+    /** The terminal panel's strip of shells, for assistive technology. */
+    tabsLabel: "终端标签页",
     /** Tab strip ×: kills the shell itself (server-side), unlike closing the dock. */
     killShell: "关闭此终端",
     /** Pane body when creating/attaching a shell failed (the server message follows). */
@@ -473,8 +478,6 @@ export const zh = {
     /** A create that 404s: the server predates the terminal API (or the shell attached to an older one). */
     noTerminalApi:
       "该服务端没有终端接口：运行中的 runtime 早于该功能。热更新只替换平台与前端，终端接口属于 runtime，需更新 runtime 本身（重启无效）",
-    /** Codex-style handoff: opens /terminal?id=… in a new window, the dock lets go. */
-    detach: "在新窗口打开",
     status: {
       connecting: "连接中",
       ready: "已连接",
