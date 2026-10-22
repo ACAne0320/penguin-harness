@@ -4008,6 +4008,8 @@ Scenarios:
       showSource: "Show source",
       stepUp: "Increase",
       stepDown: "Decrease",
+      invalid: "Not a valid value",
+      choose: "Choose…",
       conditions: {
         clear: "Clear",
         "partly-cloudy": "Partly cloudy",
