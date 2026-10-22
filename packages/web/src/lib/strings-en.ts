@@ -2074,7 +2074,12 @@ export const en: Strings = {
         "- Never read or edit .project_config.toml; configuration goes through penguin commands only.",
         `- Finish with \`penguin config model list --project-id ${projectId} --root <data root>\` and show me the result.`,
       ].join("\n"),
-    platformSyncAdded: (n: number): string => (n === 1 ? "Added 1 model" : `Added ${n} models`),
+    platformSyncResult: (added: number, updated: number): string => {
+      const models = (n: number): string => (n === 1 ? "1 model" : `${n} models`);
+      if (added === 0) return `Updated ${models(updated)}`;
+      if (updated === 0) return `Added ${models(added)}`;
+      return `Added ${models(added)}, updated ${models(updated)}`;
+    },
     platformUpToDate: "Already up to date",
     homepage: "Model page",
     speedTest: "Speed test",
