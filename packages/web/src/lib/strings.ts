@@ -2395,6 +2395,8 @@ export const zh = {
     clearGroupKey: "清除分组密钥",
     /** A blank base URL that nothing fills: the group settings' placeholder, and a model's where its group sets none. */
     baseUrlNone: "未设置：使用客户端默认端点",
+    /** The blank base URL field where the client is known: the endpoint its requests go to. */
+    baseUrlDefault: (url: string): string => `未设置：默认发往 ${url}`,
     /** The group settings' Detect while neither the field nor the group holds a base URL. */
     detectNeedsBaseUrl: "先填写 base URL",
     /** The protocol menu's first row in the group settings: the group sets none. */
@@ -2523,8 +2525,8 @@ export const zh = {
       moonshot:
         "缺省端点为国内版（api.moonshot.cn）；platform.kimi.com（国际）的 key 需在环境中同时设置 MOONSHOT_BASE_URL=https://api.moonshot.ai/v1，或在此填写 key 并填该 base URL",
     } as Record<string, string | undefined>,
-    envBaseUrlNote: (envBaseUrlKey: string): string =>
-      `请求发往该客户端的默认端点；设置了 ${envBaseUrlKey} 时发往该地址`,
+    envBaseUrlNote: (defaultBaseUrl: string, envBaseUrlKey: string): string =>
+      `请求发往 ${defaultBaseUrl}；环境里设置了 ${envBaseUrlKey} 时改发往该地址`,
     confirmVisionModelTitle: "设为视觉代理模型",
     confirmVisionModel: (name: string): string =>
       `确定把「${name}」设为视觉代理模型？不支持图片的模型用 read_file 读图时将由它代读。`,

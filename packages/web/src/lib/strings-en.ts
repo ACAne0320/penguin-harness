@@ -2230,6 +2230,7 @@ export const en: Strings = {
     groupSettingsTitle: (label: string): string => `${label} group settings`,
     clearGroupKey: "Clear the group key",
     baseUrlNone: "Not set: the client's default endpoint",
+    baseUrlDefault: (url: string): string => `Not set: requests go to ${url} by default`,
     detectNeedsBaseUrl: "Enter a base URL first",
     protocolNone: "Not set",
     protocolRoutedById: "Routed by model ID",
@@ -2344,8 +2345,8 @@ export const en: Strings = {
       moonshot:
         "Defaults to the China endpoint (api.moonshot.cn); for a platform.kimi.com key, set MOONSHOT_BASE_URL=https://api.moonshot.ai/v1 beside it, or enter the key here with that base URL",
     },
-    envBaseUrlNote: (envBaseUrlKey: string): string =>
-      `Requests go to the client's default endpoint, or to ${envBaseUrlKey} when it is set`,
+    envBaseUrlNote: (defaultBaseUrl: string, envBaseUrlKey: string): string =>
+      `Requests go to ${defaultBaseUrl}, or to ${envBaseUrlKey} when it is set`,
     confirmVisionModelTitle: "Set as proxy vision model",
     confirmVisionModel: (name: string): string =>
       `Make "${name}" the proxy vision model? Models without vision will read images through it when they call read_file.`,
