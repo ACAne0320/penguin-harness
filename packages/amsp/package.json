@@ -24,6 +24,10 @@
     "./markers": {
       "types": "./dist/markers.d.ts",
       "import": "./dist/markers.js"
+    },
+    "./browser": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/browser/amsp.js"
     }
   },
   "main": "./dist/index.js",
