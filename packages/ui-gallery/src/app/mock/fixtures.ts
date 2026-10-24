@@ -817,9 +817,8 @@ export function buildFixtures(lang: Lang, now: number): DemoFixtures {
           {
             name: "penguin-sdk",
             description:
-              "Build with the PenguinHarness SDK: the Session, Agent State and OmniMessage APIs.",
-            descriptionZh:
-              "使用 PenguinHarness SDK 开发：Session、Agent State 与 OmniMessage 接口。",
+              "Build with the PenguinHarness SDK: the Session, Agent State and AMSP record APIs.",
+            descriptionZh: "使用 PenguinHarness SDK 开发：Session、Agent State 与 AMSP 记录接口。",
             version: "0.2.13",
             package: "@penguinharness/penguin-sdk",
             source: "builtin",
@@ -1628,7 +1627,7 @@ export function buildFixtures(lang: Lang, now: number): DemoFixtures {
         file("mcp.md", 7_420, 1),
         file("memory.md", 5_118, 1),
       ],
-      "corpus/penguin-docs": [file("server-api.md", 31_004, 1), file("omni-message.md", 22_870, 1)],
+      "corpus/penguin-docs": [file("server-api.md", 31_004, 1), file("amsp-records.md", 22_870, 1)],
       scripts: [file("check-links.mjs", 1_984, 3)],
       src: [file("bm25.ts", 3_102, 5), file("rag.ts", 1_410, 0)],
       test: [file("rag.test.ts", 2_206, 0)],
@@ -1652,7 +1651,7 @@ export function buildFixtures(lang: Lang, now: number): DemoFixtures {
       "corpus/claude-code-docs/memory.md":
         "# Memory\n\nMemory files are Markdown with a frontmatter name and description.\n",
       "corpus/penguin-docs/server-api.md": "# Server API\n\nEvery route is listed here.\n",
-      "corpus/penguin-docs/omni-message.md": "# OmniMessage\n\nThe message protocol.\n",
+      "corpus/penguin-docs/amsp-records.md": "# AMSP Records\n\nThe message format.\n",
     },
   };
 
