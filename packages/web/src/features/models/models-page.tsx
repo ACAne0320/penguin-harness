@@ -160,6 +160,7 @@ import {
   detectableBaseUrl,
   displayWidthCh,
   envHintFor,
+  keylessFor,
   isCustomLikeGroup,
   isGenericProtocolClientType,
   needsProtocolDetectOnSave,
@@ -765,24 +766,22 @@ export function capabilityRow(present: { vision: boolean; fastMode: boolean }): 
  *   reaches the model (connection.ts) means it follows the group; a variable the environment
  *   holds (`envKey`, only where nothing else covers the model) means the environment answers; a
  *   group key that does NOT reach the model — its own base URL is on another origin — is said
- *   outright, since the card will read "not configured"; otherwise nothing truthful can be said.
- * - Base URL: the group's setting where it has one; else the shape a required one takes; else
- *   what an empty one means — the endpoint the requests go to (`defaultBaseUrl`, the routed
- *   client's default, where MMSP routes the model), else the client's default endpoint.
+ *   outright, since the card will read "not configured"; a model its client calls without a key
+ *   (`keyless`: an open MMSP or vLLM server) says a blank sends none; otherwise the field asks
+ *   for a key.
+ * - Base URL: the group's setting where it has one; else, where the field is required (it
+ *   cannot be saved blank), a request to enter one; else that a blank one uses the default,
+ *   without naming it.
  */
 export function connectionPlaceholders(
   draft: Pick<RowState, "provider" | "modelId" | "baseUrl" | "credential">,
   group: ProviderConnectionDto | undefined,
   {
     envKey,
+    keyless = false,
     baseUrlRequired,
-    defaultBaseUrl,
-  }: {
-    envKey?: string | undefined;
-    baseUrlRequired: boolean;
-    defaultBaseUrl?: string | undefined;
-  },
-): { apiKey: string | undefined; baseUrl: string } {
+  }: { envKey?: string | undefined; keyless?: boolean; baseUrlRequired: boolean },
+): { apiKey: string; baseUrl: string } {
   const inherited = inheritedConnection(draft.provider, draft.modelId, group, draft.baseUrl);
   const apiKey = draft.credential?.apiKeyMasked
     ? S.models.apiKeyKeepHint
@@ -792,15 +791,15 @@ export function connectionPlaceholders(
         ? S.models.apiKeyEnvHint(envKey)
         : groupKeyMissesRow(draft.baseUrl, group)
           ? S.models.keyNotReachedNote
-          : undefined;
+          : keyless
+            ? S.models.apiKeyKeylessHint
+            : S.models.apiKeyEnterHint;
   const baseUrl =
     inherited.baseUrl !== undefined
       ? S.models.inheritFromGroup
       : baseUrlRequired
-        ? "https://…"
-        : defaultBaseUrl !== undefined
-          ? S.models.baseUrlDefault(defaultBaseUrl)
-          : S.models.baseUrlNone;
+        ? S.models.baseUrlEnterHint
+        : S.models.baseUrlDefault;
   return { apiKey, baseUrl };
 }
 
@@ -2285,6 +2284,12 @@ function AddGroupDialog({
   };
 
   const busy = importing !== null;
+  /**
+   * An import needs an endpoint: a blank base URL holds Import and Detect, and is said under the
+   * field once something is typed (the other required base URL fields' rule).
+   */
+  const baseUrlMissing = baseUrl.trim() === "";
+  const baseUrlError = form.dirty && baseUrlMissing ? S.models.baseUrlRequired : null;
   const requestClose = useGuardedClose(onClose, form.scope, { locked: busy });
   const suffixLabel =
     clientType === null ? S.models.protocolUnset : protocolPathForModel(trimmed, clientType);
@@ -2312,7 +2317,7 @@ function AddGroupDialog({
               <Button
                 size="sm"
                 variant="primary"
-                disabled={busy || !nameValid}
+                disabled={busy || !nameValid || baseUrlMissing}
                 onClick={() => void runImport()}
               >
                 {S.models.groupImportAll}
@@ -2376,9 +2381,9 @@ function AddGroupDialog({
                   variant="link"
                   size="sm"
                   loading={detecting}
-                  disabled={busy}
+                  disabled={busy || baseUrlMissing}
                   onClick={() => void detect()}
-                  title={S.models.detectProtocolHint}
+                  title={baseUrlMissing ? S.models.detectNeedsBaseUrl : S.models.detectProtocolHint}
                   data-tooltip-extra
                   className="shrink-0"
                 >
@@ -2392,6 +2397,7 @@ function AddGroupDialog({
                   required
                   value={baseUrl}
                   disabled={busy}
+                  invalid={baseUrlError !== null}
                   onChange={(e) => {
                     // An edited URL retires the previous verdict: protocol and failure tone
                     // both described the old endpoint.
@@ -2404,7 +2410,7 @@ function AddGroupDialog({
                   className="font-mono"
                   style={{ paddingRight: `calc(${displayWidthCh(suffixLabel)}ch + 2.25rem)` }}
                   title={S.models.baseUrlSuffixTitle}
-                  placeholder="https://…"
+                  placeholder={S.models.baseUrlEnterHint}
                 />
                 <div className="absolute inset-y-0 right-1 flex items-center">
                   <ProtocolSuffixMenu
@@ -2416,6 +2422,7 @@ function AddGroupDialog({
                   />
                 </div>
               </div>
+              {baseUrlError && <FieldError>{baseUrlError}</FieldError>}
             </div>
             {importing !== null && (
               <p className="text-xs text-gray-500 dark:text-gray-400">{importing}</p>
@@ -3458,8 +3465,15 @@ function ModelDialog({
       : undefined;
   const { apiKey: apiKeyHint, baseUrl: baseUrlHint } = connectionPlaceholders(form, group, {
     envKey: envHintKey,
+    // A blank key sent as none (an open MMSP or vLLM server); the variable, where set, wins.
+    keyless: keylessFor(
+      form.provider,
+      form.modelId,
+      form.clientType,
+      form.baseUrl,
+      groupShape(group),
+    ),
     baseUrlRequired,
-    defaultBaseUrl: liveEnv.defaultBaseUrl,
   });
   // Where a blank key's requests go, shown only beside the env fallback hint (hence keyed off
   // the same envHintKey). A vendor group whose client defaults to one of two hosts (zhipu /
@@ -3772,6 +3786,7 @@ function ModelDialog({
               onChange={(e) => set({ [key]: decimalOnly(e.target.value) })}
               className="text-right font-mono"
               affix={{ leading: CURRENCY_SYMBOL[currency], trailing: S.models.priceUnitShort }}
+              placeholder={S.models.priceBlankHint}
             />
           ))}
         </div>

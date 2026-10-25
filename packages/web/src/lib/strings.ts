@@ -2353,6 +2353,8 @@ export const zh = {
     priceCacheRead: "缓存命中价格",
     priceCacheWrite: "缓存未命中价格",
     priceOutput: "输出价格",
+    /** The price fields' placeholder: a model with no prices is left out of every cost (the three are filled together or not at all). */
+    priceBlankHint: "留空则不计算费用",
     /** Line under the model dialog's price fields on a row with a running promotion: the fields hold the list price, and changing it cancels the promotion. */
     promotionPriceHint: (pct: number): string =>
       `此处为牌价，当前促销在此基础上省 ${pct}%；修改价格会取消促销`,
@@ -2362,6 +2364,10 @@ export const zh = {
     apiKey: "API key",
     apiKeyKeepHint: "留空保留现有 key",
     apiKeyEnvHint: (envKey: string): string => `留空则使用环境变量 ${envKey}`,
+    /** The API key placeholder where nothing covers a blank field: no stored key, no group key that reaches the model, no environment variable the server reports set. */
+    apiKeyEnterHint: "请填写 API key",
+    /** The API key placeholder where a blank key is called without one: an open MMSP server or a vLLM server, with no stored key, group key or set variable. */
+    apiKeyKeylessHint: "留空则不使用 API key",
     keyConfigured: "已配置 key",
     clearApiKey: "清除已存 API key",
     baseUrl: "自定义 base URL",
@@ -2396,10 +2402,10 @@ export const zh = {
     groupSettingsTitle: (label: string): string => `${label} 分组设置`,
     /** The clear box under a stored group key. */
     clearGroupKey: "清除分组密钥",
-    /** A blank base URL that nothing fills: the group settings' placeholder, and a model's where its group sets none. */
-    baseUrlNone: "未设置：使用客户端默认端点",
-    /** The blank base URL field where the client is known: the endpoint its requests go to. */
-    baseUrlDefault: (url: string): string => `未设置：默认发往 ${url}`,
+    /** The base URL placeholder where no group setting fills a blank field and none is required; it names no URL. */
+    baseUrlDefault: "留空使用默认 base URL",
+    /** The base URL placeholder where the field is required and empty: a blank one cannot be saved. */
+    baseUrlEnterHint: "请填写 base URL",
     /** The group settings' Detect while neither the field nor the group holds a base URL. */
     detectNeedsBaseUrl: "先填写 base URL",
     /** The protocol menu's first row in the group settings: the group sets none. */
