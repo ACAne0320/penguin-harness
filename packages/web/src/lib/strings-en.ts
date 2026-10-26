@@ -120,6 +120,7 @@ export const en: Strings = {
       failed: "Failed",
       installedOnly: "Installed",
       behind: "Update available",
+      restartNeeded: "Restart needed",
       notConnected: "Not connected",
       unreachable: "Unreachable",
       stopped: "Stopped",
@@ -174,8 +175,11 @@ export const en: Strings = {
       connected: "Connected",
       dialling: "Dialling",
       refused: "Refused",
+      unanswered: "Can't connect",
       failed: "Failed",
     },
+    restartNeededReason:
+      "This machine is on a different version, so its conversations won't update by themselves. Click Restart server; if that doesn't help, reinstall it.",
     agentsUnreachable: "That machine is not connected — use it from the Machines page",
     adminOnly: "Only an admin can manage machines.",
     updateNotice: (count: number) =>
@@ -3836,6 +3840,11 @@ Scenarios:
       missing: "This conversation's machine is not on this Project's machine list",
       hint: "The conversation is kept on that machine and loads as soon as the connection is back.",
       details: "Technical details",
+    },
+    machineRestartNeeded: {
+      body: (alias: string) =>
+        `${alias} is on a different version, so this conversation won't update by itself. Go to Machines and restart it.`,
+      open: "Go to Machines",
     },
     statsLabel: "Stats",
     removeImage: "Remove image",

@@ -1803,6 +1803,7 @@ export const en: GalleryStrings = {
         signInRefused: "Sign-in refused",
         installedOnly: "Installed",
         behind: "Update available",
+        restartNeeded: "Restart needed",
         notConnected: "Not connected",
         unreachable: "Unreachable",
         stopped: "Stopped",
@@ -1817,6 +1818,8 @@ export const en: GalleryStrings = {
         reconnectStopped:
           "lab-2 refused the connection: no ssh server listens at that address and port.",
         behind: "Version 0.2.16 is available",
+        restartNeeded:
+          "This machine is on a different version, so its conversations won't update by themselves. Click Restart server; if that doesn't help, reinstall it.",
       },
       cards: "Machine cards",
       cardsHint:
