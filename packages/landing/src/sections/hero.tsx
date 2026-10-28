@@ -17,6 +17,7 @@ import {
   DownloadIcon,
   ExternalLinkIcon,
   ModelProviderLogo,
+  AirplaneIcon,
   TerminalIcon,
 } from "../components/icons";
 import { ExternalLink, ExternalLinkScope } from "../components/external-link";
@@ -74,6 +75,20 @@ function CatalogRow({
   );
 }
 
+function HeroWord({ text, variant }: { text: string; variant: "growth" | "reach" }) {
+  return (
+    <span className={`hero-word hero-word-${variant}`}>
+      <span className="hero-word-ink">{text}</span>
+      <span className="hero-word-trace" aria-hidden="true">
+        <span className="hero-word-flight">
+          <span className="hero-word-trail" />
+          <AirplaneIcon className="hero-word-plane" />
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export function Hero() {
   const { locale } = useSiteLocale();
   return (
@@ -92,10 +107,21 @@ export function Hero() {
         </h1>
 
         <p
-          className="hero-positioning anim-rise mx-auto mt-6 leading-tight font-semibold tracking-[-0.035em] text-balance break-keep [overflow-wrap:break-word]"
+          className="hero-positioning anim-rise mx-auto mt-6 font-semibold tracking-[-0.035em] text-balance break-keep [overflow-wrap:break-word]"
           style={{ animationDelay: "70ms" }}
         >
-          {S.hero.positioning}
+          <span className="hero-positioning-clause">
+            {S.hero.positioning.growthLead}
+            <HeroWord text={S.hero.positioning.growth} variant="growth" />
+            {S.hero.positioning.growthEnd}
+          </span>
+          {S.hero.positioning.separator}
+          <wbr />
+          <span className="hero-positioning-clause">
+            {S.hero.positioning.reachLead}
+            <HeroWord text={S.hero.positioning.reach} variant="reach" />
+            {S.hero.positioning.reachEnd}
+          </span>
         </p>
 
         <p
@@ -212,7 +238,8 @@ export function Hero() {
 
         <LiveAppFrame
           surface="chat-new"
-          title={S.showcase.start}
+          autoplay="evolution"
+          title={S.showcase.evolve.frame}
           className="anim-rise mx-auto mt-14 max-w-6xl text-left sm:mt-16"
         />
       </div>
