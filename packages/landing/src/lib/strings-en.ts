@@ -5,8 +5,10 @@
  * and other terms.
  */
 import type { Strings } from "./strings";
+import { companyEn } from "./company-strings";
 
 export const en: Strings = {
+  company: companyEn,
   siteName: "PenguinHarness",
   backToTop: "Back to top",
 

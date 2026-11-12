@@ -44,6 +44,13 @@ export function Nav() {
       gallery: { href: galleryUrl(locale) },
     },
   });
+  // A proposed workflow belongs to the landing site; sibling sites keep their shared routes.
+  links.splice(1, 0, {
+    id: "company",
+    label: S.company.name,
+    active: pathname.replace(/\/+$/, "") === "/company",
+    ...route("/company"),
+  });
   return (
     <SiteNav
       name={S.siteName}

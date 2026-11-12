@@ -22,6 +22,7 @@ export function Footer() {
         {
           title: S.footer.product,
           links: [
+            { id: "company", href: "/company", label: S.company.name, render: routeLink },
             { id: "cases", href: "/#cases", label: S.footer.cases, render: routeLink },
             {
               id: "quickstart",

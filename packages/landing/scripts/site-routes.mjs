@@ -76,11 +76,24 @@ const AMSP_META = {
 };
 
 /**
- * Non-blog landing SPA pages: the desktop download page and the AMSP page. A page with `meta`
+ * Non-blog landing SPA pages: downloads, AMSP and the company workflow prototype. A page with `meta`
  * gets its own title, description and share card in its shell (route-shell.mjs).
  */
 export function pageRoutes() {
-  return [{ route: "/download/" }, { route: "/amsp/", meta: AMSP_META }];
+  return [
+    { route: "/download/" },
+    { route: "/amsp/", meta: AMSP_META },
+    {
+      route: "/company/",
+      meta: {
+        title: "Company mode: from long-term goals to verified delivery",
+        description:
+          "An interactive design prototype: one personal agent, a task inbox, and hands-on verification before automatic merge or human review.",
+        image: "/og-cover.png",
+        imageAlt: "PenguinHarness",
+      },
+    },
+  ];
 }
 
 /**

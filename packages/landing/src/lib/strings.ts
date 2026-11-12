@@ -6,7 +6,10 @@
  * the tree keyed by locale — keep `S.x` reads inside components. English marketing copy uses lowercase `agent`; preserve the
  * established casing of Workspace, Token, Task, Skill, Trace, and other product terms.
  */
+import { companyZh } from "./company-strings";
+
 export const zh = {
+  company: companyZh,
   siteName: "PenguinHarness",
   backToTop: "回到顶部",
 

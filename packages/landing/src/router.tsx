@@ -34,6 +34,9 @@ import { DownloadPage } from "./pages/download";
 const AmspPage = lazy(() =>
   import("./pages/amsp").then((module) => ({ default: module.AmspPage })),
 );
+const CompanyPage = lazy(() =>
+  import("./pages/company").then((module) => ({ default: module.CompanyPage })),
+);
 
 /** The hub pages: each list page and each detail page is a chunk of its own. */
 const hubPage = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) =>
@@ -111,6 +114,14 @@ export function AppRouter() {
           <Route path="/blog" element={<BlogListPage />} />
           <Route path="/blog/:slug" element={<BlogPostRoute />} />
           <Route path="/download" element={<DownloadPage />} />
+          <Route
+            path="/company"
+            element={
+              <Suspense fallback={<PostPending />}>
+                <CompanyPage />
+              </Suspense>
+            }
+          />
           {(
             [
               ["/plugins", PluginsPage],
