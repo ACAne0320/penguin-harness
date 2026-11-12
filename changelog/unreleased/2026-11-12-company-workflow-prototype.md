@@ -8,7 +8,9 @@ Scope: landing
 
 The website has a Company page at `/company/`, linked from its navigation. It is an interactive design prototype with sample data, available in English and Chinese with light and dark themes.
 
-After building the landing package, `node packages/landing/scripts/company-preview.mjs` exports the same page to `packages/landing/dist/company-preview.html` for offline review. The HTML includes its scripts, styles and logo.
+The prototype builds on the current company interface: the organization sidebar, overview inbox, five-column ticket board and in-place ticket dialog. It reuses the application's shell, navigation, controls and Frost theme. The overview puts human review first; the personal agent and long-term goal have their own entries. Channels and desks keep their positions and start folded. Muted management entries are outside this prototype's scope.
+
+After building the landing package, `node packages/landing/scripts/company-preview.mjs` exports the same page to `packages/landing/dist/company-preview.html` for offline review. The HTML includes its scripts, styles and logo, including the embedded application. The app theme is isolated from the website's styles. Theme changes preserve the demo's state; refreshing or changing language resets it.
 
 ## Workflow
 

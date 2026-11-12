@@ -19,12 +19,22 @@
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 import { blogFrontmatter } from "./scripts/frontmatter-plugin";
 import { hubData } from "./scripts/hub-plugin";
 
 export default defineConfig({
   base: process.env.BASE_PATH ?? "/",
   plugins: [blogFrontmatter(), hubData(), react(), tailwindcss()],
+  build: {
+    manifest: true,
+    rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL("./index.html", import.meta.url)),
+        company: fileURLToPath(new URL("./company-workbench.html", import.meta.url)),
+      },
+    },
+  },
   // Fixed PenguinHarness dev ports (stand alone — only the main server default is
   // shared, as DEFAULT_SERVER_PORT in core; vite configs cannot import core TS): this
   // server's, and the gallery's, whose frames the home page shows.

@@ -8,7 +8,9 @@ Scope: landing
 
 官网新增 `/company/` 公司模式页面，并提供导航入口。这是一份使用示例数据的交互设计原型，支持中英文及浅色、深色主题。
 
-构建官网后，运行 `node packages/landing/scripts/company-preview.mjs` 可将同一页面导出为 `packages/landing/dist/company-preview.html`，用于离线评审。HTML 内含脚本、样式与标志图片。
+原型以现有公司界面为基础，保留组织侧栏、概览收件箱、五列工单看板和原地打开的工单弹窗，复用应用的框架、导航、控件与 Frost 主题。概览优先呈现需要人复核的工单，Personal agent 和长期目标各有入口。频道、工位保留原有位置并默认收起，灰色管理入口不在本次原型范围内。
+
+构建官网后，运行 `node packages/landing/scripts/company-preview.mjs` 可将同一页面导出为 `packages/landing/dist/company-preview.html`，用于离线评审。HTML 内含脚本、样式、标志图片及嵌入的应用界面。应用主题与官网样式隔离，切换主题会保留演示状态；刷新或切换语言会重置演示。
 
 ## 工作流程
 
